@@ -1,5 +1,8 @@
 * { box-sizing: border-box; }
 
+/* hidden を付けた物は、display を指定していても隠す */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
@@ -18,6 +21,19 @@ body {
 .header h1 { margin: 0; font-size: 1.5rem; }
 .lead { margin: 4px 0 0; font-size: 0.9rem; opacity: 0.9; }
 
+/* ログイン（上の帯の中）：［GitHub でログイン］・「〇〇 でログイン中」・［ログアウト］ */
+.auth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+.auth-status { word-break: break-all; }
+.auth-button { text-decoration: none; }
+
 .main {
   max-width: 720px;
   margin: 0 auto;
@@ -35,7 +51,6 @@ body {
 
 .field { display: grid; gap: 4px; margin-bottom: 12px; }
 .field-label { font-size: 0.85rem; font-weight: 700; color: #475569; }
-.field-note { font-size: 0.8rem; color: #64748b; }
 
 input, select, textarea {
   font: inherit;
@@ -97,7 +112,8 @@ input:focus, select:focus, textarea:focus {
   white-space: pre-line;
 }
 .ai-message.is-error,
-.check-message {
+.check-message,
+.login-message {
   color: #b91c1c;
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -105,6 +121,9 @@ input:focus, select:focus, textarea:focus {
   padding: 8px 12px;
 }
 .check-message { margin: 0 0 16px; font-size: 0.9rem; white-space: pre-line; }
+
+/* /?login=〈理由〉 で戻ってきたときの知らせ（カードの上） */
+.login-message { margin: 0; font-size: 0.9rem; }
 
 /* 使ったトークン数（結果の下に小さく） */
 .usage { margin: 16px 0 0; font-size: 0.75rem; color: #64748b; }
