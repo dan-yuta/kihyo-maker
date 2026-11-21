@@ -67,4 +67,46 @@ const TEMPLATES = [
 ## 次の報告
 {次の報告}`,
   },
+  {
+    name: "変更作業の申請",
+    backlogType: "タスク",
+    titleFormat: "【変更】{作業日} {対象}の{変更内容}",
+    questions: [
+      { name: "作業日", label: "作業日", type: "text", placeholder: "例：11/28" },
+      { name: "作業時間", label: "作業時間（24時間表記）", type: "text", placeholder: "例：22:00〜23:30" },
+      { name: "対象", label: "対象（サーバー・機器の名前）", type: "text", placeholder: "例：web01" },
+      { name: "変更内容", label: "変更内容", type: "text", placeholder: "例：OS のセキュリティパッチを当てる" },
+      { name: "なぜ変えるか", label: "なぜ変えるか", type: "textarea", placeholder: "例：月に1回のパッチ当てのため" },
+      { name: "サービス停止", label: "サービスの停止", type: "select", options: ["あり", "瞬断のみ", "なし"] },
+      { name: "影響の中身", label: "影響の中身（止まる時間・利用者への連絡）", type: "textarea", placeholder: "例：22:30〜22:40 は web01 の画面が開けない。利用者には 11/25 に連絡済み" },
+      { name: "作業手順", label: "作業手順（手順書の場所か、手順の流れ）", type: "textarea", placeholder: "例：パッチを当てる → 再起動する → 画面が開けるか確かめる" },
+      { name: "切り戻し手順", label: "切り戻し手順（うまくいかないときに元に戻す方法）", type: "textarea", placeholder: "例：23:00 までに確認が終わらなければ、パッチを外して再起動する" },
+      { name: "作業後の確認", label: "作業後の確認（何を見たら終わりか）", type: "textarea", placeholder: "例：web01 の画面が開ける。監視にアラートが出ていない" },
+    ],
+    dueKey: "作業日",
+    body: `## 目的
+{なぜ変えるか}
+
+## 変更内容
+{変更内容}
+
+## 対象
+{対象}
+
+## 作業日時
+{作業日} {作業時間}
+
+## サービスへの影響
+- 停止：{サービス停止}
+- 中身：{影響の中身}
+
+## 作業手順
+{作業手順}
+
+## 切り戻し手順
+{切り戻し手順}
+
+## 作業後の確認
+{作業後の確認}`,
+  },
 ];
