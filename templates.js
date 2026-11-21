@@ -109,4 +109,35 @@ const TEMPLATES = [
 ## 作業後の確認
 {作業後の確認}`,
   },
+  {
+    name: "調査依頼",
+    backlogType: "タスク",
+    titleFormat: "【調査】{対象}の{調べること}",
+    questions: [
+      { name: "対象", label: "対象（サーバー・機器の名前）", type: "text", placeholder: "例：db01" },
+      { name: "調べること", label: "調べること", type: "text", placeholder: "例：夜間バッチが遅くなった原因" },
+      { name: "なぜ調べるか", label: "なぜ調べるか", type: "textarea", placeholder: "例：11/20 から終わる時刻が 30 分遅れている" },
+      { name: "分かっていること", label: "分かっていること", type: "textarea", placeholder: "例：11/20 にデータが 2 倍になった" },
+      { name: "期限", label: "期限", type: "text", placeholder: "例：12/1" },
+      { name: "報告の形", label: "報告の形（何を出したら完了か）", type: "textarea", placeholder: "例：原因と対策の案を、このチケットのコメントに書く" },
+    ],
+    dueKey: "期限",
+    body: `## 背景
+{なぜ調べるか}
+
+## 調べること
+{調べること}
+
+## 対象
+{対象}
+
+## 分かっていること
+{分かっていること}
+
+## 期限
+{期限}
+
+## 報告の形
+{報告の形}`,
+  },
 ];
