@@ -8,17 +8,22 @@
 //   failed … 環境変数が無い・GitHub とのやり取りに失敗した
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import {
+  SESSION_COOKIE,
+  STATE_COOKIE,
+  VERIFIER_COOKIE,
+  callbackUrl,
+  cookieLine,
+  isPlainObject,
+  readConfig,
+} from "../lib/session.js";
 
 const TOKEN_URL = "https://github.com/login/oauth/access_token";
 const USER_URL = "https://api.github.com/user";
 const USER_AGENT = "kihyo-maker";
 const TIMEOUT_MS = 10 * 1000; // GitHub を待つのは 10 秒まで
 
-// クッキーの名前
-// state と code_verifier は api/login.js と、セッションは api/me.js・api/logout.js・api/generate.js と同じにする
-const STATE_COOKIE = "kihyo_oauth_state";
-const VERIFIER_COOKIE = "kihyo_oauth_verifier";
-const SESSION_COOKIE = "kihyo_session";
+// クッキーの名前は lib/session.js にある（api/login.js・api/me.js・api/logout.js・api/generate.js と同じ物を使う）
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // セッションの期限（秒）＝ 30 日
 
 export default async function handler(req, res) {
@@ -175,7 +180,7 @@ async function fetchUser(token) {
 }
 
 // セッションのクッキーの中身を作る。「中身（base64url）.署名（base64url）」の形
-// 署名は SESSION_SECRET で HMAC-SHA256。確かめる側は api/me.js・api/generate.js の readSession
+// 署名は SESSION_SECRET で HMAC-SHA256。確かめる側は lib/session.js の readSession（形を変えるときは、そちらも直す）
 function signSession(session, secret) {
   const payload = Buffer.from(JSON.stringify(session)).toString("base64url");
   const signature = createHmac("sha256", secret).update(payload).digest().toString("base64url");
@@ -201,43 +206,4 @@ function readCookies(req) {
 // 文字列ならそのまま、ほか（無い・2 つ以上ある）は空にする
 function text(value) {
   return typeof value === "string" ? value : "";
-}
-
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-// 戻り先の URL。「https://」＋ 今開いているホスト ＋「/api/callback」（本番とプレビューの両方で動かすため）
-// api/login.js にも同じ物がある（GitHub に渡す redirect_uri は、2 回とも同じでないといけない）
-function callbackUrl(req) {
-  const host = req.headers.host;
-  if (typeof host !== "string" || !/^[A-Za-z0-9.-]+(:[0-9]+)?$/.test(host)) return null;
-  return `https://${host}/api/callback`;
-}
-
-// クッキーの 1 行を作る。どれも HttpOnly・Secure・SameSite=Lax。消すときは中身を空・期限を 0 にする
-function cookieLine(name, value, path, maxAge) {
-  return `${name}=${value}; Max-Age=${maxAge}; Path=${path}; HttpOnly; Secure; SameSite=Lax`;
-}
-
-// 環境変数を読む。4 つのどれかが無ければ null（ログインもしない・AI も使わせない）
-// api/login.js・api/callback.js・api/me.js・api/generate.js の 4 つに同じ物がある。直すときは 4 つとも直す
-function readConfig() {
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-  const sessionSecret = process.env.SESSION_SECRET;
-  const allowedIds = readAllowedIds(process.env.ALLOWED_GITHUB_IDS);
-  if (!clientId || !clientSecret || !sessionSecret || !allowedIds) return null;
-  return { clientId, clientSecret, sessionSecret, allowedIds };
-}
-
-// 通してよい GitHub の数字の ID（カンマ区切り）を読む。数字でない物は使わない。1 つも無ければ null
-function readAllowedIds(list) {
-  if (typeof list !== "string") return null;
-  const ids = new Set();
-  for (const part of list.split(",")) {
-    const id = part.trim();
-    if (/^[1-9][0-9]*$/.test(id)) ids.add(id);
-  }
-  return ids.size > 0 ? ids : null;
 }
