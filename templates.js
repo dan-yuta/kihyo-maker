@@ -41,7 +41,7 @@ const TEMPLATES = [
     backlogType: "バグ",
     titleFormat: "【障害】{対象}で{起きていること}",
     questions: [
-      { name: "発生日時", label: "発生日時", type: "text", placeholder: "例：11/21 10:30" },
+      { name: "発生日時", label: "発生日時（24時間表記）", type: "text", placeholder: "例：11/21 22:30" },
       { name: "対象", label: "対象（サーバー・機器の名前）", type: "text", placeholder: "例：web01" },
       { name: "起きていること", label: "起きていること", type: "text", placeholder: "例：画面を開くと 502 が出る" },
       { name: "影響範囲", label: "影響範囲", type: "select", options: ["全体", "一部の利用者", "なし", "調査中"] },
