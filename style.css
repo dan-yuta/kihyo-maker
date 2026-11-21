@@ -35,6 +35,7 @@ body {
 
 .field { display: grid; gap: 4px; margin-bottom: 12px; }
 .field-label { font-size: 0.85rem; font-weight: 700; color: #475569; }
+.field-note { font-size: 0.8rem; color: #64748b; }
 
 input, select, textarea {
   font: inherit;
@@ -87,6 +88,26 @@ input:focus, select:focus, textarea:focus {
 .backlog-fields { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
 .backlog-fields dt { font-weight: 700; color: #475569; }
 .backlog-fields dd { margin: 0; }
+
+/* AI で整える：待っている・知らせ・エラー */
+.ai-message {
+  margin: 12px 0 0;
+  font-size: 0.9rem;
+  color: #475569;
+  white-space: pre-line;
+}
+.ai-message.is-error,
+.check-message {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.check-message { margin: 0 0 16px; font-size: 0.9rem; white-space: pre-line; }
+
+/* 使ったトークン数（結果の下に小さく） */
+.usage { margin: 16px 0 0; font-size: 0.75rem; color: #64748b; }
 
 .toast {
   position: fixed;
