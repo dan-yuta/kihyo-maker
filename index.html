@@ -19,14 +19,20 @@
         <select id="templateSelect"></select>
       </label>
       <div id="questions" class="questions"></div>
+      <label class="field">
+        <span class="field-label">合言葉（「AI で整える」で使います）</span>
+        <input id="passcodeInput" type="password" autocomplete="off">
+        <span class="field-note">入れた合言葉は、このブラウザにだけ残ります。</span>
+      </label>
       <div class="buttons">
         <button id="fillButton" type="button" class="button button-primary">型どおりに埋める</button>
-        <!-- あとで「AI で整える」ボタンをここに足す -->
-        <span id="aiButtonSlot"></span>
+        <button id="aiButton" type="button" class="button">AI で整える</button>
       </div>
+      <p id="aiMessage" class="ai-message" role="status" aria-live="polite" hidden></p>
     </section>
 
     <section class="card" id="result" hidden>
+      <p id="checkOutput" class="check-message" role="alert" hidden></p>
       <div class="result-block">
         <div class="result-head">
           <h2>件名</h2>
@@ -48,6 +54,7 @@
           <dt>期限日</dt><dd id="dueOutput"></dd>
         </dl>
       </div>
+      <p id="usageOutput" class="usage" hidden></p>
     </section>
   </main>
 
