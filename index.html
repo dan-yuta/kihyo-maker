@@ -10,20 +10,22 @@
   <header class="header">
     <h1>起票メーカー</h1>
     <p class="lead">テンプレートを選んで答えると、Backlog に貼る件名と詳細ができます。</p>
+    <div id="authBox" class="auth">
+      <span id="authStatus" class="auth-status" hidden></span>
+      <a id="loginLink" class="button button-small auth-button" href="/api/login" hidden>GitHub でログイン</a>
+      <button id="logoutButton" type="button" class="button button-small auth-button" hidden>ログアウト</button>
+    </div>
   </header>
 
   <main class="main">
+    <p id="loginMessage" class="login-message" role="alert" hidden></p>
+
     <section class="card">
       <label class="field">
         <span class="field-label">テンプレート</span>
         <select id="templateSelect"></select>
       </label>
       <div id="questions" class="questions"></div>
-      <label class="field">
-        <span class="field-label">合言葉（「AI で整える」で使います）</span>
-        <input id="passcodeInput" type="password" autocomplete="off">
-        <span class="field-note">入れた合言葉は、このブラウザにだけ残ります。</span>
-      </label>
       <div class="buttons">
         <button id="fillButton" type="button" class="button button-primary">型どおりに埋める</button>
         <button id="aiButton" type="button" class="button">AI で整える</button>

@@ -1,6 +1,7 @@
 // 起票メーカーの画面の動き
 // templates.js の TEMPLATES を読んで、ドロップダウン・質問・型どおりの埋め込みを作る
 // 「AI で整える」は裏側（api/generate.js）に頼んで、件名と本文を整えてもらう
+// 「AI で整える」を使えるのは「GitHub でログイン」した人だけ（api/login.js・api/me.js・api/logout.js）
 
 const EMPTY_MARK = "（要確認）";
 
@@ -8,17 +9,33 @@ const EMPTY_MARK = "（要確認）";
 const AI_ENDPOINT = "/api/generate";
 const AI_MAX_CHARS = 4000; // 送る物の文字数の上限（api/generate.js と同じ）
 const TITLE_MAX_CHARS = 40; // 件名の文字数の上限
-const PASSCODE_KEY = "kihyo-maker-passcode"; // 合言葉をこのブラウザに残すときの名前
 const FALLBACK_HINT = "［型どおりに埋める］なら使えます";
 const NO_REPLY = "裏側から返事がありませんでした";
 const IS_FILE = location.protocol === "file:";
+const FILE_NOTICE = "AI はプレビューか本番の URL で使えます";
+
+// ログインの決まり
+const ME_ENDPOINT = "/api/me";
+const LOGOUT_ENDPOINT = "/api/logout";
+const LOGIN_NEEDED = "AI を使うにはログインしてください";
+const OLD_PASSCODE_KEY = "kihyo-maker-passcode"; // 前に合言葉を残していた名前（消すためだけに使う）
+// /?login=〈理由〉 で戻ってきたときの知らせ（理由は api/callback.js が付ける）
+const LOGIN_REASONS = new Map([
+  ["retry", "もう一度ログインしてください"],
+  ["denied", "このアプリを使えるのは、許可された人だけです"],
+  ["failed", "GitHub とのやり取りに失敗しました"],
+]);
 
 const templateSelect = document.getElementById("templateSelect");
 const questionsBox = document.getElementById("questions");
 const fillButton = document.getElementById("fillButton");
 const aiButton = document.getElementById("aiButton");
-const passcodeInput = document.getElementById("passcodeInput");
 const aiMessage = document.getElementById("aiMessage");
+const authBox = document.getElementById("authBox");
+const authStatus = document.getElementById("authStatus");
+const loginLink = document.getElementById("loginLink");
+const logoutButton = document.getElementById("logoutButton");
+const loginMessage = document.getElementById("loginMessage");
 const resultBox = document.getElementById("result");
 const checkOutput = document.getElementById("checkOutput");
 const titleOutput = document.getElementById("titleOutput");
@@ -27,6 +44,11 @@ const typeOutput = document.getElementById("typeOutput");
 const dueOutput = document.getElementById("dueOutput");
 const usageOutput = document.getElementById("usageOutput");
 const toast = document.getElementById("toast");
+
+// ログインの今の状態
+let loginState = "checking"; // "checking"（確かめ中）・"in"（ログイン中）・"out"（ログインしていない）
+let loginName = ""; // ログイン中の GitHub の名前
+let waiting = false; // AI の返事を待っている間は true
 
 // ドロップダウンにテンプレートを並べる
 TEMPLATES.forEach((template, index) => {
@@ -146,14 +168,29 @@ function showAiError(text) {
   showAiMessage(`${text}\n${FALLBACK_HINT}`, true);
 }
 
+// AI の知らせを、ふだんの物に戻す
 function clearAiMessage() {
   if (IS_FILE) return; // file: で開いたときの知らせは消さない
+  if (loginState === "out") {
+    showAiMessage(LOGIN_NEEDED, false); // ログインしていないときは、ログインのお願いを残す
+    return;
+  }
   aiMessage.textContent = "";
   aiMessage.hidden = true;
 }
 
-function setWaiting(waiting) {
-  aiButton.disabled = waiting;
+// ［AI で整える］を押せるのは、プレビューか本番の URL で、ログインしているときだけ
+function canUseAi() {
+  return !IS_FILE && loginState === "in";
+}
+
+function updateAiButton() {
+  aiButton.disabled = waiting || !canUseAi();
+}
+
+function setWaiting(value) {
+  waiting = value;
+  updateAiButton();
   if (waiting) showAiMessage("AI が書いています…", false);
 }
 
@@ -212,10 +249,9 @@ function showUsage(usage) {
 aiButton.addEventListener("click", async () => {
   const template = currentTemplate();
   const answers = collectAnswers();
-  const passcode = passcodeInput.value;
 
-  if (passcode === "") {
-    showAiError("合言葉を入れてください");
+  if (!canUseAi()) {
+    clearAiMessage();
     return;
   }
 
@@ -235,7 +271,6 @@ aiButton.addEventListener("click", async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        passcode,
         titleFormat: template.titleFormat,
         bodyFormat: template.body,
         answers,
@@ -254,6 +289,8 @@ aiButton.addEventListener("click", async () => {
   }
 
   if (!response.ok) {
+    // 401 は「ログインしてください」（期限切れ・許可から外された）。上のログインの所も戻す
+    if (response.status === 401) setLogin("out", "");
     const text = typeof data.error === "string" ? data.error : NO_REPLY;
     const code = typeof data.apiStatus === "number" ? `（元の番号：${data.apiStatus}）` : "";
     showAiError(text + code);
@@ -271,34 +308,102 @@ aiButton.addEventListener("click", async () => {
   showUsage(data.usage);
 });
 
-// 合言葉は、このブラウザにだけ残す（残せないブラウザでも動くようにする）
-function loadPasscode() {
+// ---- GitHub でログイン ----
+
+// 上の帯（［GitHub でログイン］・「〇〇 でログイン中」・［ログアウト］）を、今の状態に合わせる
+function renderLogin() {
+  loginLink.hidden = loginState !== "out";
+  logoutButton.hidden = loginState !== "in";
+  if (loginState === "checking") {
+    authStatus.textContent = "ログインを確かめています…";
+  } else if (loginState === "in") {
+    authStatus.textContent = `${loginName} でログイン中`; // 名前も textContent で出す
+  } else {
+    authStatus.textContent = "";
+  }
+  authStatus.hidden = authStatus.textContent === "";
+  updateAiButton();
+}
+
+function setLogin(state, name) {
+  loginState = state;
+  loginName = name;
+  renderLogin();
+  clearAiMessage();
+}
+
+// 開いたときに /api/me で、ログインしているかを確かめる
+async function checkLogin() {
+  let data = null;
   try {
-    return localStorage.getItem(PASSCODE_KEY) || "";
+    const response = await fetch(ME_ENDPOINT, { cache: "no-store" });
+    data = await response.json();
   } catch {
-    return "";
+    data = null; // つながらない・JSON 以外が返った → ログインしていない扱い
+  }
+  if (isPlainObject(data) && data.loggedIn === true && typeof data.login === "string" && data.login !== "") {
+    setLogin("in", data.login);
+  } else {
+    setLogin("out", "");
   }
 }
 
-function savePasscode(value) {
-  try {
-    if (value) {
-      localStorage.setItem(PASSCODE_KEY, value);
-    } else {
-      localStorage.removeItem(PASSCODE_KEY);
-    }
-  } catch {
-    // 残せなくても、今の画面ではそのまま使える
-  }
+function showLoginMessage(text) {
+  loginMessage.textContent = text;
+  loginMessage.hidden = false;
 }
 
-passcodeInput.value = loadPasscode();
-passcodeInput.addEventListener("input", () => savePasscode(passcodeInput.value));
+function hideLoginMessage() {
+  loginMessage.textContent = "";
+  loginMessage.hidden = true;
+}
 
-// index.html を直接開いたとき（file:）は、裏側が無いので AI は使えない
+// /?login=〈理由〉 で戻ってきたときは、理由を日本語で出し、アドレス欄から ?login= を消す
+function showLoginReason() {
+  const url = new URL(location.href);
+  if (!url.searchParams.has("login")) return;
+  const text = LOGIN_REASONS.get(url.searchParams.get("login"));
+  if (text) showLoginMessage(text);
+  url.searchParams.delete("login");
+  history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+}
+
+logoutButton.addEventListener("click", async () => {
+  logoutButton.disabled = true;
+  let ok = false;
+  try {
+    const response = await fetch(LOGOUT_ENDPOINT, { method: "POST" });
+    ok = response.ok;
+  } catch {
+    ok = false;
+  }
+  logoutButton.disabled = false;
+
+  if (!ok) {
+    showLoginMessage("ログアウトできませんでした。もう一度押してください");
+    return;
+  }
+  hideLoginMessage();
+  setLogin("out", "");
+  say("ログアウトしました");
+});
+
+// 合言葉はもう使わない。前にこのブラウザに残した合言葉も消す
+try {
+  localStorage.removeItem(OLD_PASSCODE_KEY);
+} catch {
+  // 消せないブラウザでも、画面はそのまま動く
+}
+
 if (IS_FILE) {
+  // index.html を直接開いたとき（file:）は、裏側が無いので AI もログインも使えない
+  authBox.hidden = true;
   aiButton.disabled = true;
-  showAiMessage("AI はプレビューか本番の URL で使えます", false);
+  showAiMessage(FILE_NOTICE, false);
+} else {
+  showLoginReason();
+  renderLogin();
+  checkLogin();
 }
 
 // コピー
