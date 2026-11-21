@@ -9,6 +9,10 @@ const EMPTY_MARK = "（要確認）";
 const AI_ENDPOINT = "/api/generate";
 const AI_MAX_CHARS = 4000; // 送る物の文字数の上限（api/generate.js と同じ）
 const TITLE_MAX_CHARS = 40; // 件名の文字数の上限
+// おおよその料金（円）を出すための数（料金が変わったら、ここだけ直す）
+const PRICE_INPUT_PER_MTOK = 4; // 入力：100万トークンで何ドルか（Claude Opus 5.5）
+const PRICE_OUTPUT_PER_MTOK = 20; // 出力：100万トークンで何ドルか
+const YEN_PER_DOLLAR = 150; // 1ドルを何円で計算するか
 const FALLBACK_HINT = "［型どおりに埋める］なら使えます";
 const NO_REPLY = "裏側から返事がありませんでした";
 const IS_FILE = location.protocol === "file:";
@@ -242,7 +246,10 @@ function showUsage(usage) {
   }
   const input = usage.inputTokens.toLocaleString("ja-JP");
   const output = usage.outputTokens.toLocaleString("ja-JP");
-  usageOutput.textContent = `使ったトークン数：入力 ${input} ／ 出力 ${output}`;
+  const dollars = (usage.inputTokens * PRICE_INPUT_PER_MTOK + usage.outputTokens * PRICE_OUTPUT_PER_MTOK) / 1000000;
+  const yen = dollars * YEN_PER_DOLLAR;
+  const yenText = yen < 10 ? yen.toFixed(1) : Math.round(yen).toLocaleString("ja-JP");
+  usageOutput.textContent = `使ったトークン数：入力 ${input} ／ 出力 ${output}（おおよそ ${yenText} 円）`;
   usageOutput.hidden = false;
 }
 
