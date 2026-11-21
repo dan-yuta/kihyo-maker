@@ -36,4 +36,35 @@ const TEMPLATES = [
 ## 完了条件
 {終わりの形}`,
   },
+  {
+    name: "障害報告",
+    backlogType: "バグ",
+    titleFormat: "【障害】{対象}で{起きていること}",
+    questions: [
+      { name: "発生日時", label: "発生日時", type: "text", placeholder: "例：11/21 10:30" },
+      { name: "対象", label: "対象（サーバー・機器の名前）", type: "text", placeholder: "例：web01" },
+      { name: "起きていること", label: "起きていること", type: "text", placeholder: "例：画面を開くと 502 が出る" },
+      { name: "影響範囲", label: "影響範囲", type: "select", options: ["全体", "一部の利用者", "なし", "調査中"] },
+      { name: "やった対応", label: "やった対応", type: "textarea", placeholder: "例：web01 を再起動した" },
+      { name: "原因", label: "原因", type: "textarea", placeholder: "分からなければ空のまま" },
+      { name: "次の報告", label: "次の報告", type: "text", placeholder: "例：11:30 に状況を報告" },
+    ],
+    body: `## 事象
+{起きていること}
+
+## 発生日時
+{発生日時}
+
+## 影響範囲
+{影響範囲}
+
+## 暫定対応
+{やった対応}
+
+## 原因
+{原因}
+
+## 次の報告
+{次の報告}`,
+  },
 ];
